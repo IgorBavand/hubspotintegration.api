@@ -1,145 +1,197 @@
+# HubSpot Integration API
 
-# 🚀 API de Integração com HubSpot
+## 📖 Visão Geral
 
-Esta é uma API REST desenvolvida com **Spring Boot** que integra com a API do **HubSpot**, utilizando o fluxo de autorização **OAuth 2.0 (Authorization Code Flow)**. A aplicação permite autenticação segura, criação de contatos no CRM e tratamento de eventos via webhooks.
+API de integração com o HubSpot desenvolvida em Java com Spring Boot, focada em gerenciamento de contatos e autenticação OAuth 2.0. Esta documentação detalha as decisões técnicas, arquitetura e motivações por trás das escolhas tecnológicas.
 
----
+## 🚀 Tecnologias Utilizadas
 
-# 👀 Visualizar
-Clique para utilizar a integração pode visualizar na prática [aqui](https://hubspotintegration-portal.vercel.app/auth)
+### Core
+- **Java 17**: Versão LTS com suporte a records e pattern matching
+- **Spring Boot 3.2.0**: Framework robusto para desenvolvimento de APIs REST
+- **Spring WebFlux**: Escolhido para melhor performance em operações assíncronas e não-bloqueantes
+
+### Dependências
+- **Lombok**: Redução de boilerplate code
+- **WebClient**: Cliente HTTP reativo para comunicação com APIs externas
+- **Validation**: Validação de dados de entrada
+- **Logging**: Registro de eventos e debug
+
+## 🏗️ Arquitetura
+
+### Decisões de Design
+
+1. **DDD**
+   - Separação clara entre aplicação e infraestrutura
+   - Facilita testes e manutenção
+   - Permite troca de implementações sem afetar o core
+
+2. **Programação Reativa**
+   - Uso de WebFlux para melhor escalabilidade
+   - Tratamento assíncrono de requisições
+   - Melhor performance em operações I/O
+
+3. **Tratamento de Erros**
+   - Hierarquia de exceções customizadas
+   - Respostas padronizadas via `ApiResponse`
+   - Logging estruturado para debug
+
+### Motivações Técnicas
 
 
-## ✅ Pré-requisitos
+1. **WebClient**
+   - Suporte a programação reativa
+   - Melhor performance
+   - API mais moderna e flexível
+
+2. **Lombok**
+   - Redução de código boilerplate
+   - Melhor legibilidade
+   - Manutenção simplificada
+
+3. **Webhooks**
+   - Implementar endpoint de webhook
+   - Processamento assíncrono
+   - Notificações em tempo real
+
+4. **Rate Limiting**
+   - Implementar rate limiting
+   - Proteção contra abusos
+   - Melhor gerenciamento de recursos
+
+## 📋 Pré-requisitos
 
 - Java 17 ou superior
-- Maven 3.6 ou superior
-- Conta de Desenvolvedor no HubSpot
-- Um App no HubSpot com credenciais OAuth 2.0 configuradas
+- Maven
+- Conta no HubSpot
+- Aplicação OAuth configurada no HubSpot
 
----
+## 🔧 Configuração
 
-## ⚙️ Configuração do Projeto
-
-### 1. Clone o repositório
+1. Clone o repositório:
 ```bash
 git clone https://github.com/IgorBavand/hubspotintegration.api
-cd hubspotintegration
+cd hubspotintegration.api
 ```
 
-### 2. Configure o App no HubSpot
-- Acesse sua conta de desenvolvedor HubSpot
-- Crie um novo aplicativo ou selecione um existente
-- Nas configurações de OAuth 2.0:
-    - Defina o **Redirect URI** como:  
-      `http://localhost:8080/api/oauth/callback`
-    - Adicione os escopos necessários:  
-      `crm.objects.contacts.write`
-- Copie o **Client ID** e o **Client Secret**
-
-### 3. Configure o `application.properties`
-Edite o arquivo `src/main/resources/application.properties` com suas credenciais:
+2. Configure as variáveis de ambiente no arquivo `application.properties`:
 ```properties
-hubspot.client.id=your-client-id
-hubspot.client.secret=your-client-secret
-hubspot.redirect.uri=your-callback-url
+hubspot.client.id=seu-client-id
+hubspot.client.secret=seu-client-secret
+hubspot.redirect.uri=url-de-callback
+hubspot.token.url=https://api.hubapi.com/oauth/v1/token
 ```
 
-### 4. Compile o projeto
+3. Compile o projeto:
 ```bash
 mvn clean install
 ```
 
-### 5. Inicie a aplicação
+## 🏃 Executando o Projeto
+
+1. Inicie a aplicação:
 ```bash
 mvn spring-boot:run
 ```
 
----
-
-## 📌 Endpoints Disponíveis
-
-### 🔐 1. Gerar URL de Autorização
-**GET** `/api/oauth/authorize`  
-Gera e retorna a URL para iniciar o processo de autenticação com o HubSpot.
-
----
-
-### 🔄 2. Callback OAuth
-**GET** `/api/oauth/callback?code={code}`  
-Recebe o código de autorização do HubSpot e troca por um token de acesso.
-
----
-
-### ➕ 3. Criar Contato
-**POST** `/api/contacts`  
-**Headers:**
-```http
-Authorization: Bearer {access_token}
+2. A aplicação estará disponível em:
 ```
-**Body (JSON):**
+http://localhost:8080
+```
+
+## 📚 Endpoints da API
+
+### 1. Autenticação
+
+#### Obter URL de Autorização
+```http
+GET /api/oauth/authorize
+```
+**Resposta:**
 ```json
 {
-  "properties": {
-    "email": "exemplo@email.com",
-    "firstname": "João",
-    "lastname": "Silva"
+  "success": true,
+  "message": "Success",
+  "data": "https://app.hubspot.com/oauth/authorize?..."
+}
+```
+
+#### Callback de Autorização
+```http
+GET /api/oauth/callback?code={code}
+```
+**Resposta:**
+```json
+{
+  "success": true,
+  "message": "Success",
+  "data": "{token}"
+}
+```
+
+### 2. Contatos
+
+#### Criar Contato
+```http
+POST /api/contacts
+Headers:
+  Authorization: Bearer {token}
+  Content-Type: application/json
+
+Body:
+{
+  "email": "string",
+  "firstname": "string",
+  "lastname": "string",
+  "phone": "string",
+  "company": "string"
+}
+```
+
+**Resposta de Sucesso (200):**
+```json
+{
+  "success": true,
+  "message": "Success",
+  "data": {
+    "email": "string",
+    "firstname": "string",
+    "lastname": "string",
+    "phone": "string",
+    "company": "string"
   }
 }
 ```
-Cria um novo contato no HubSpot.
 
----
+## 🔍 Estrutura do Projeto
 
-### 📩 4. Receber Webhook
-**POST** `/api/webhook`  
-**Headers:**
-```http
-X-HubSpot-Event-Type: contact.creation
 ```
-**Body (JSON):**
-```json
-{
-  "subscriptionType": "contact.creation",
-  "portalId": 123456,
-  "objectId": 789,
-  "propertyName": "email",
-  "propertyValue": "exemplo@email.com",
-  "changeSource": "CRM_UI",
-  "eventId": 123,
-  "subscriptionId": 456,
-  "attemptNumber": 1,
-  "objectType": "CONTACT",
-  "timestamp": 1234567890
-}
+src/main/java/com/igorbavand/hubspotintegration/
+├── api/                    # Controladores REST
+│   ├── AuthController.java
+│   └── ContactController.java
+├── application/           # Lógica de negócio
+│   ├── dto/              # Objetos de transferência de dados
+│   │   ├── request/
+│   │   └── response/
+│   └── service/          # Serviços de aplicação
+├── infrastructure/        # Infraestrutura
+│   ├── client/           # Clientes HTTP
+│   └── utils/            # Utilitários
+├── exception/            # Tratamento de exceções
+└── model/               # Modelos de domínio
 ```
-Recebe e processa eventos de criação de contatos enviados pelo HubSpot via webhook.
 
----
+## 🔒 Segurança
 
-## 🔐 Segurança
+### Decisões de Segurança
+1. **OAuth 2.0**
+   - Padrão industrial para autenticação
+   - Suporte a múltiplos fluxos
 
-- Utiliza OAuth 2.0 para autenticação segura com o HubSpot
-- Tokens de acesso são obrigatórios para endpoints protegidos
-- Recomenda-se proteger o endpoint de webhook em produção
-- Armazene credenciais de forma segura (variáveis de ambiente, ferramentas de gestão segura de configurações, etc.)
 
----
-
-## 📉 Limites de Requisição
-
-A aplicação respeita os limites de requisição da API do HubSpot.  
-É recomendável implementar mecanismos de controle de taxa (rate limiting) em produção.
-
----
-
-## ❗ Tratamento de Erros
-
-A API trata falhas comuns como:
-- Erros na autenticação OAuth
-- Limites excedidos da API
-- Requisições inválidas
-- Problemas de rede
-- Erros internos do servidor
-
----
+2. **Headers de Segurança**
+   - CORS configurado
+   - Headers de segurança HTTP
+   - Proteção contra ataques comuns
 
